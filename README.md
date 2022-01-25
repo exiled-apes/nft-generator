@@ -1,4 +1,4 @@
-# Image Generator
+# NFT Image Generator
 
 ## Setup
 

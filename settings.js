@@ -1,12 +1,14 @@
 const build = {
-  sourceName: "example-assets", // folder name of correctly formated asset that is in /inputs
-  quantity: 999,
+  sourceName: "example-assets", // Folder name of correctly formated asset that is in /inputs
+  quantity: 10, // How many would you like to generate? Try a small number for test runs
 };
 
+// This is the data that will show up in your NFT metadata
 const PROJECT_NAME = "Example Project";
 const SYMBOL = "EXAMPLE";
 const CREATORS = [];
 
+// DONT EDIT ANYTHING BELOW THIS LINE
 const meta = {
   image: "",
   name: PROJECT_NAME,

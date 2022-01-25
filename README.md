@@ -10,6 +10,8 @@ yarn install
 
 Checkout the [ART_SPEC.md](./ART_SPEC.md) for info on how to structure your raw assets.
 
+Then got to [settings.js](./settings.js) and make sure that file is correctly configured for your specific project.
+
 ```bash
 yarn createAll
 

@@ -1,0 +1,15 @@
+{
+  "scripts": {
+    "createLayers": "node ./scripts/createLayers.js",
+    "createMeta": "node ./scripts/createMeta.js",
+    "createImages": "node ./scripts/createImages.js",
+    "verifyAssets": "node ./scripts/verifyAssets.js",
+    "createAll": "yarn createLayers && yarn createMeta && yarn createImages"
+  },
+  "dependencies": {
+    "fs-extra": "^10.0.0",
+    "lodash": "^4.17.21",
+    "sharp": "^0.29.1",
+    "weighted": "^0.3.0"
+  }
+}

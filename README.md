@@ -2,13 +2,13 @@
 
 ## Setup
 
-Checkout the [ART_SPEC.md](./ART_SPEC.md) for info on how to structure your raw assets.
-
 ```bash
 yarn install
 ```
 
 ## Usage
+
+Checkout the [ART_SPEC.md](./ART_SPEC.md) for info on how to structure your raw assets.
 
 ```bash
 yarn createAll

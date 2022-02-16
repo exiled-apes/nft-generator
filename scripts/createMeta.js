@@ -44,11 +44,15 @@ async function createNewRow(index) {
 
     // handle _excludes
     const choiceExcludes =
-      layers?._excludes?.[categoryKey]?.[randomWeightedChoice];
+      layers?._excludes?.[categoryKey]?.[
+        randomWeightedChoice.replace(/ /g, "_")
+      ];
     if (choiceExcludes) {
       Object.entries(choiceExcludes).forEach(
         ([excludeCategory, excludeValues]) => {
-          const filterExcludes = (choice) => !excludeValues.includes(choice.id);
+          const filterExcludes = (choice) => {
+            return !excludeValues.includes(choice.id.replace(/ /g, "_"));
+          };
           const retroActiveChoice = chooseOne(excludeCategory, filterExcludes);
           newRow[excludeCategory] = retroActiveChoice;
         }

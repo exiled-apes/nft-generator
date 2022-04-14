@@ -96,7 +96,7 @@ const startTime = new Date().getTime();
 main()
   .then(() => {
     const endTime = new Date().getTime();
-    console.log("Images cteated");
+    console.log("Images created");
     console.log("startTime", startTime);
     console.log("endTime", endTime);
     const totalMinutes = Math.floor((endTime - startTime) / 1000 / 60);

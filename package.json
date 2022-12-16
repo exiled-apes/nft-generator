@@ -4,6 +4,7 @@
     "createMeta": "node ./scripts/createMeta.js",
     "createImages": "node ./scripts/createImages.js",
     "verifyAssets": "node ./scripts/verifyAssets.js",
+    "checkConflicts": "node ./scripts/checkConflicts.js",
     "createAll": "yarn createLayers && yarn createMeta && yarn createImages"
   },
   "dependencies": {

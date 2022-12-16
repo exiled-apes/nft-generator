@@ -3,6 +3,7 @@ const { isEqual, cloneDeep, random } = require("lodash");
 const fs = require("fs").promises;
 const fsExtra = require("fs-extra");
 
+const conflicts = require("./conflicts.json");
 const settings = require("../settings");
 const sourceName = `${settings.build.sourceName}`;
 const outputFolder = `./outputs`;
@@ -15,7 +16,7 @@ const list = [];
 
 // Helper functions
 const CATEGORY_KEYS = Object.keys(layers).filter((layer) => {
-  return !["_pairs", "_excludes", "_includes"].includes(layer);
+  return !["_pairs"].includes(layer);
 });
 const getCategoryChoices = (categoryKey) => layers[categoryKey];
 const toStr = (json) => JSON.stringify(json, null, 2);
@@ -37,27 +38,10 @@ function chooseOne(categoryKey, filterChoices = () => true) {
 // A recursive function to generate unique combinations
 async function createNewRow(index) {
   const newRow = {};
+
   // For each trait category, select a random trait based on the weightings
   CATEGORY_KEYS.forEach((categoryKey) => {
-    const randomWeightedChoice = chooseOne(categoryKey);
-    newRow[categoryKey] = randomWeightedChoice;
-
-    // handle _excludes
-    const choiceExcludes =
-      layers?._excludes?.[categoryKey]?.[
-        randomWeightedChoice.replace(/ /g, "_")
-      ];
-    if (choiceExcludes) {
-      Object.entries(choiceExcludes).forEach(
-        ([excludeCategory, excludeValues]) => {
-          const filterExcludes = (choice) => {
-            return !excludeValues.includes(choice.id.replace(/ /g, "_"));
-          };
-          const retroActiveChoice = chooseOne(excludeCategory, filterExcludes);
-          newRow[excludeCategory] = retroActiveChoice;
-        }
-      );
-    }
+    newRow[categoryKey] = chooseOne(categoryKey);
   });
 
   const hasDuplicate = list.find((existingImage) => {
@@ -65,9 +49,29 @@ async function createNewRow(index) {
     return matches;
   });
 
-  if (hasDuplicate) {
-    console.log("Found duplicate regenerating");
+  let hasConflict = false;
+  const checkValidCategoryAndValue = (category, value) =>
+    !!newRow[category] &&
+    !!(layers[category] || []).find((x) => x.id === value);
+
+  for (const [categoryA, valueA, categoryB, valueB] of conflicts) {
+    if (!checkValidCategoryAndValue(categoryA, valueA)) {
+      throw Error(`Bad conflict ${categoryA} - ${valueA}`);
+    }
+    if (!checkValidCategoryAndValue(categoryB, valueB)) {
+      throw Error(`Bad conflict ${categoryB} - ${valueB}`);
+    }
+
+    if (newRow[categoryA] === valueA && newRow[categoryB] === valueB) {
+      console.log(categoryA, valueA, categoryB, valueB);
+      hasConflict = true;
+    }
+  }
+
+  if (hasDuplicate || hasConflict) {
+    console.log(hasConflict ? "Found conflict" : "Found duplicate");
     const tryAgain = await createNewRow(index);
+    console.log("tryAgain", tryAgain);
     return tryAgain;
   } else {
     return newRow;

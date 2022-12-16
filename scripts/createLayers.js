@@ -47,8 +47,6 @@ async function main() {
 
   const traits = {
     _pairs: {},
-    _excludes: {},
-    _includes: {},
   };
 
   for (let i = 0; i < folderNames.length; i++) {
@@ -89,25 +87,6 @@ async function main() {
       .map(checkFileNameErrors);
 
     switch (folderName) {
-      case "_excludes":
-        const _excludes = {};
-        visibleFileNames.forEach((fileName) => {
-          const [categoryA, valueA, categoryB, valueB] = fileName
-            .replace(".png", "")
-            .split("-");
-          if (!_excludes[categoryA]) _excludes[categoryA] = {};
-          if (!_excludes[categoryA][valueA]) _excludes[categoryA][valueA] = {};
-          if (!_excludes[categoryA][valueA][categoryB]) {
-            _excludes[categoryA][valueA][categoryB] = [];
-          }
-          _excludes[categoryA][valueA][categoryB].push(valueB);
-        });
-        traits._excludes = _excludes;
-        break;
-      case "_includes":
-        const _includes = {};
-        traits._includes = _includes;
-        break;
       case "_pairs":
         const _pairs = {};
         visibleFileNames.forEach((fileName) => {
@@ -134,9 +113,6 @@ async function main() {
     }
   }
 
-  console.log(traits._pairs);
-  console.log(traits._excludes);
-  console.log(traits._includes);
   const layers = JSON.stringify(traits, null, 2);
   await fsExtra.outputFile(outputPath, layers);
 }

@@ -1,2 +1,6 @@
 node_modules
 .DS_Store
+inputs/*/
+outputs/*/
+outputs/*.json
+scripts/conflicts.json

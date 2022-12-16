@@ -1,6 +1,6 @@
-const conflicts = require("./conflicts.json");
-const fs = require("fs/promises");
 const settings = require("../settings");
+const conflicts = require(`./outputs/${settings.sourceName}-conflicts.json`);
+const fs = require("fs/promises");
 
 const sourceName = `${settings.build.sourceName}`;
 

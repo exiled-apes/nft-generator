@@ -3,12 +3,12 @@ const { isEqual, cloneDeep, random } = require("lodash");
 const fs = require("fs").promises;
 const fsExtra = require("fs-extra");
 
-const conflicts = require("./conflicts.json");
 const settings = require("../settings");
+const conflicts = require(`../outputs/${settings.build.sourceName}-conflicts.json`);
 const sourceName = `${settings.build.sourceName}`;
 const outputFolder = `./outputs`;
 const layers = require(`.${outputFolder}/${sourceName}-layers.json`);
-const traitCountPath = `${outputFolder}/${sourceName}-trait-count.json`;
+const traitCountPath = `${outputFolder}/${sourceName}-trait-count.csv`;
 const outputPath = `${outputFolder}/${sourceName}`;
 
 // Generate Traits
@@ -94,6 +94,13 @@ function generateMeta(index) {
   const image = list[index];
   const meta = cloneDeep(settings.meta);
 
+  if (!settings.isSolana) {
+    delete meta.symbol;
+    delete meta.collection;
+    delete meta.seller_fee_basis_points;
+    delete meta.properties;
+  }
+
   // add attributes
   CATEGORY_KEYS.forEach((layerKey) => {
     const nextAttribute = {
@@ -103,7 +110,9 @@ function generateMeta(index) {
     meta.attributes.push(nextAttribute);
   });
 
-  meta.properties.files = [{ uri: `${index}.png`, type: "image/png" }];
+  if (settings.isSolana) {
+    meta.properties.files = [{ uri: `${index}.png`, type: "image/png" }];
+  }
   meta.name += ` #${index}`;
   meta.image = `${index}.png`;
   return meta;
@@ -148,7 +157,14 @@ async function main() {
       traitCounts[masterKey] += 1;
     });
   }
-  await fs.writeFile(traitCountPath, toStr(traitCounts));
+
+  let csv = "Category,Value,Count\n";
+  for (let [values, count] of Object.entries(traitCounts)) {
+    const [category, value] = values.split(".");
+    csv += `${category},${value},${count}\n`;
+  }
+
+  await fs.writeFile(traitCountPath, csv);
 
   const finalMeta = [];
   for (let i = 0; i < list.length; i++) {

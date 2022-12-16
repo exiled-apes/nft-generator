@@ -1,6 +1,7 @@
 const settings = require("../settings");
 const fs = require("fs").promises;
 const fsExtra = require("fs-extra");
+const { to } = require("await-to-js");
 
 const sourceName = `${settings.build.sourceName}`;
 const outputName = `${sourceName}`;
@@ -115,6 +116,28 @@ async function main() {
 
   const layers = JSON.stringify(traits, null, 2);
   await fsExtra.outputFile(outputPath, layers);
+
+  const [error, conflictsRaw] = await to(
+    fs.readFile(`./inputs/${settings.build.sourceName}/_conflicts.csv`)
+  );
+
+  let conflictsJson = [];
+  if (conflictsRaw) {
+    const conflicts = conflictsRaw.toString();
+    const conflictsFormatted = conflicts
+      .split("\n")
+      .slice(1)
+      .filter((x) => x);
+    for (conflict of conflictsFormatted) {
+      const [categoryA, valueA, categoryB, valueB] = conflict.split(",");
+      conflictsJson.push([categoryA, valueA, categoryB, valueB]);
+    }
+  }
+
+  await fsExtra.outputFile(
+    `./outputs/${settings.build.sourceName}-conflicts.json`,
+    JSON.stringify(conflictsJson, null, 2)
+  );
 }
 
 main()

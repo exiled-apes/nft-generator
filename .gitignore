@@ -3,4 +3,5 @@ node_modules
 inputs/*/
 outputs/*/
 outputs/*.json
+outputs/*.csv
 scripts/conflicts.json

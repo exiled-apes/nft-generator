@@ -1,6 +1,5 @@
 const weighted = require("weighted");
-const { isEqual, cloneDeep, random } = require("lodash");
-const fs = require("fs").promises;
+const { isEqual, cloneDeep } = require("lodash");
 const fsExtra = require("fs-extra");
 
 const settings = require("../settings");
@@ -83,23 +82,38 @@ async function createMeta() {
   for (let i = 0; i < settings.build.quantity; i++) {
     const newRow = await createNewRow(i);
     list.push(newRow);
-  }
-  // add tokenId
-  for (let i = 0; i < list.length; i++) {
-    list.tokenId = i;
+
+    // Get trait counts
+    const traitCounts = {};
+    for (let i = 0; i < list.length; i++) {
+      const image = list[i];
+      CATEGORY_KEYS.forEach((layerKey) => {
+        const masterKey = `${layerKey}.${image[layerKey]}`;
+        if (!traitCounts[masterKey]) traitCounts[masterKey] = 0;
+        traitCounts[masterKey] += 1;
+      });
+    }
+
+    let csv = "Category,Value,Count\n";
+    for (let [values, count] of Object.entries(traitCounts)) {
+      const [category, value] = values.split(".");
+      csv += `${category},${value},${count}\n`;
+    }
+
+    await fsExtra.outputFile(traitCountPath, csv);
+
+    const finalMeta = [];
+    for (let i = 0; i < list.length; i++) {
+      const meta = generateMeta(i);
+      finalMeta.push(meta);
+      await fsExtra.outputFile(`${outputPath}/${i}.json`, toStr(meta));
+    }
   }
 }
 
 function generateMeta(index) {
   const image = list[index];
   const meta = cloneDeep(settings.meta);
-
-  if (!settings.isSolana) {
-    delete meta.symbol;
-    delete meta.collection;
-    delete meta.seller_fee_basis_points;
-    delete meta.properties;
-  }
 
   // add attributes
   CATEGORY_KEYS.forEach((layerKey) => {
@@ -112,24 +126,12 @@ function generateMeta(index) {
 
   if (settings.isSolana) {
     meta.properties.files = [{ uri: `${index}.png`, type: "image/png" }];
+  } else {
+    delete meta.properties;
   }
   meta.name += ` #${index}`;
   meta.image = `${index}.png`;
   return meta;
-}
-
-// Returns true if all images are unique
-// Test: list.push(list[0]);
-function listAreUnique() {
-  for (let i = 0; i < list.length; i++) {
-    for (let j = 0; j < list.length; j++) {
-      if (j !== i) {
-        const areEqual = isEqual(list[i], list[j]);
-        if (areEqual) return false;
-      }
-    }
-  }
-  return true;
 }
 
 async function main() {
@@ -138,40 +140,6 @@ async function main() {
 
   // Create Meta
   await createMeta();
-
-  // Double check all images are unique
-  if (listAreUnique()) {
-    console.log("All images are unique");
-  } else {
-    console.log("Duplicate images found");
-    process.exit(1);
-  }
-
-  // Get trait counts
-  const traitCounts = {};
-  for (let i = 0; i < list.length; i++) {
-    const image = list[i];
-    CATEGORY_KEYS.forEach((layerKey) => {
-      const masterKey = `${layerKey}.${image[layerKey]}`;
-      if (!traitCounts[masterKey]) traitCounts[masterKey] = 0;
-      traitCounts[masterKey] += 1;
-    });
-  }
-
-  let csv = "Category,Value,Count\n";
-  for (let [values, count] of Object.entries(traitCounts)) {
-    const [category, value] = values.split(".");
-    csv += `${category},${value},${count}\n`;
-  }
-
-  await fs.writeFile(traitCountPath, csv);
-
-  const finalMeta = [];
-  for (let i = 0; i < list.length; i++) {
-    const meta = generateMeta(i);
-    finalMeta.push(meta);
-    await fsExtra.outputFile(`${outputPath}/${i}.json`, toStr(meta));
-  }
 }
 
 main()

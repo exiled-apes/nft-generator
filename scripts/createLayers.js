@@ -28,7 +28,9 @@ async function main() {
     const nameArray = folderName.split("-");
     if (nameArray.length !== 2 && !isSpecialFolder) {
       throw Error(
-        `Issue with folder name ${name}. Incorrect number of arguments.`
+        `Issue with folder name ${nameArray?.join(
+          ", "
+        )}. Incorrect number of arguments.`
       );
     }
     const [index, name] = nameArray;

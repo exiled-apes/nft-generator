@@ -9,10 +9,13 @@ const outputFolder = `./outputs`;
 const metaPath = `${outputFolder}/${sourceName}/`;
 const layers = require(`.${outputFolder}/${sourceName}-layers.json`);
 const outputPath = `${outputFolder}/${sourceName}`;
-let metaList = null;
+let sortedJsonFiles = [];
 
 async function generateImage(index) {
-  const attributes = metaList[index].attributes;
+  const jsonFile = JSON.parse(
+    await fs.readFile(`${outputPath}/${sortedJsonFiles[index]}`)
+  );
+  const attributes = jsonFile.attributes;
   const imageArray = attributes.map(({ trait_type, value }) => {
     const traitTypeSnakeCase = trait_type.replace(/ /g, "_");
     const layer = layers[traitTypeSnakeCase].find(
@@ -49,34 +52,44 @@ const collator = new Intl.Collator(undefined, {
 
 async function createImages() {
   const fileNames = await fs.readdir(metaPath);
-  const sortedJsonFiles = fileNames
+  sortedJsonFiles = fileNames
     .filter((fileName) => fileName.endsWith(".json"))
     .sort(collator.compare);
-  const metaPromises = sortedJsonFiles.map((fileName) =>
-    fs.readFile(`${outputPath}/${fileName}`)
-  );
-  const results = await Promise.all(metaPromises);
-  metaList = results.map((result) => {
-    const data = JSON.parse(result);
-    return data;
-  });
+
+  const imageFiles = fileNames.filter((fileName) => fileName.endsWith(".png"));
+  console.log("IMAGE COUNT", imageFiles.length);
 
   const bucketSize = 10;
-  const bucketCount = Math.ceil(metaList.length / bucketSize);
+  const bucketCount = Math.ceil(sortedJsonFiles.length / bucketSize);
 
   for (let i = 0; i < bucketCount; i++) {
+    const bucketGenerateStart = performance.now();
     const startIndex = i * bucketSize;
     const bucketIndices = new Array(10)
       .fill(null)
       .map((_, index) => startIndex + index)
-      .filter((x) => x < metaList.length);
+      .filter((x) => x < sortedJsonFiles.length);
     console.log(bucketIndices);
+
     const promises = bucketIndices.map((index) => generateImage(index));
     await Promise.all(promises);
+
+    try {
+      const bucketGenerateStop = performance.now();
+      const timeElapsed =
+        (bucketGenerateStop - bucketGenerateStart) / 1000 / 60 / 60;
+      const bucketsLeft = bucketCount - i;
+      console.log(
+        "Time remaining (hrs)",
+        (timeElapsed * bucketsLeft).toFixed(2)
+      );
+    } catch (e) {
+      console.log("performance error", e?.message);
+    }
   }
 }
 
-async function main() {
+async function clearPrevious() {
   // Delete any old images
   const fileNames = await fs.readdir(metaPath);
   const imageFileNames = fileNames.filter((fileName) =>
@@ -87,8 +100,10 @@ async function main() {
     return fsExtra.remove(path);
   });
   await Promise.all(removePromises);
+}
 
-  // Create images
+async function main() {
+  await clearPrevious();
   await createImages();
 }
 
@@ -96,7 +111,7 @@ const startTime = new Date().getTime();
 main()
   .then(() => {
     const endTime = new Date().getTime();
-    console.log("Images cteated");
+    console.log("Images created");
     console.log("startTime", startTime);
     console.log("endTime", endTime);
     const totalMinutes = Math.floor((endTime - startTime) / 1000 / 60);

@@ -6,7 +6,7 @@
     "verifyAssets": "node ./scripts/verifyAssets.js",
     "checkConflicts": "node ./scripts/checkConflicts.js",
     "generateConflicts": "node ./scripts/generateConflicts.js",
-    "createAll": "yarn createLayers && yarn createMeta && yarn createImages"
+    "createAll": "node ./scripts/createLayers.js && node ./scripts/createMeta.js && node ./scripts/createImages.js"
   },
   "dependencies": {
     "await-to-js": "^3.0.0",

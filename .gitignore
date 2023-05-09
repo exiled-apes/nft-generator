@@ -4,4 +4,5 @@ inputs/*/
 outputs/*/
 outputs/*.json
 outputs/*.csv
+outputs/*.zip
 scripts/conflicts.json

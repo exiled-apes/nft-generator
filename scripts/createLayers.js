@@ -129,7 +129,8 @@ async function main() {
     const conflictsFormatted = conflicts
       .split("\n")
       .slice(1)
-      .filter((x) => x);
+      .filter((x) => x)
+      .map((x) => x.replace("\r", ""));
     for (conflict of conflictsFormatted) {
       const [categoryA, valueA, categoryB, valueB] = conflict.split(",");
       conflictsJson.push([categoryA, valueA, categoryB, valueB]);

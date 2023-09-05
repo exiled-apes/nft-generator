@@ -12,9 +12,8 @@ const outputPath = `${outputFolder}/${sourceName}`;
 let sortedJsonFiles = [];
 
 async function generateImage(index) {
-  const jsonFile = JSON.parse(
-    await fs.readFile(`${outputPath}/${sortedJsonFiles[index]}`)
-  );
+  const jsonPath = `${outputPath}/${sortedJsonFiles[index]}`;
+  const jsonFile = JSON.parse(await fs.readFile(jsonPath));
   const attributes = jsonFile.attributes;
   const imageArray = attributes.map(({ trait_type, value }) => {
     const traitTypeSnakeCase = trait_type.replace(/ /g, "_");
@@ -56,16 +55,24 @@ async function createImages() {
     .filter((fileName) => fileName.endsWith(".json"))
     .sort(collator.compare);
 
-  const imageFiles = fileNames.filter((fileName) => fileName.endsWith(".png"));
-  console.log("IMAGE COUNT", imageFiles.length);
+  let imageFiles = [];
+
+  if (settings.build.shouldResume) {
+    imageFiles = fileNames.filter((fileName) => fileName.endsWith(".png"));
+    console.log("EXISTING IMAGE COUNT", imageFiles.length);
+  }
 
   const bucketSize = 10;
   const bucketCount = Math.ceil(sortedJsonFiles.length / bucketSize);
+  const startBucket = Math.floor(imageFiles.length / bucketSize);
 
-  for (let i = 0; i < bucketCount; i++) {
+  console.log("START BUCKET", startBucket);
+  console.log("BUCKET COUNT", bucketCount);
+
+  for (let i = startBucket; i < bucketCount; i++) {
     const bucketGenerateStart = performance.now();
     const startIndex = i * bucketSize;
-    const bucketIndices = new Array(10)
+    const bucketIndices = new Array(bucketSize)
       .fill(null)
       .map((_, index) => startIndex + index)
       .filter((x) => x < sortedJsonFiles.length);
@@ -103,7 +110,9 @@ async function clearPrevious() {
 }
 
 async function main() {
-  await clearPrevious();
+  if (!settings.build.shouldResume) {
+    await clearPrevious();
+  }
   await createImages();
 }
 

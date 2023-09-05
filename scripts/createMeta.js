@@ -1,6 +1,7 @@
 const weighted = require("weighted");
 const { isEqual, cloneDeep } = require("lodash");
 const fsExtra = require("fs-extra");
+const { to } = require("await-to-js");
 
 const settings = require("../settings");
 const conflicts = require(`../outputs/${settings.build.sourceName}-conflicts.json`);
@@ -70,45 +71,66 @@ async function createNewRow(index) {
   if (hasDuplicate || hasConflict) {
     console.log(hasConflict ? "Found conflict" : "Found duplicate");
     const tryAgain = await createNewRow(index);
-    console.log("tryAgain", tryAgain);
     return tryAgain;
   } else {
     return newRow;
   }
 }
 
+async function loadOrCreate(index) {
+  try {
+    if (settings.build.shouldResume) {
+      const [error, file] = await to(
+        fsExtra.readFile(`${outputPath}/${index}.json`, "utf8")
+      );
+      if (!file || error) throw Error("No file");
+      const meta = JSON.parse(file);
+      // format to list type
+      const existingRow = meta.attributes.reduce((acc, cur) => {
+        acc[cur.trait_type.replace(/ /g, "_")] = cur.value.replace(/ /g, "_");
+        return acc;
+      }, {});
+
+      return { nextRow: existingRow, isNew: false };
+    } else {
+      throw Error("Resume is off");
+    }
+  } catch (e) {
+    const newRow = await createNewRow(index);
+
+    return { nextRow: newRow, isNew: true };
+  }
+}
+
 async function createMeta() {
   // Generate the unique combinations based on trait weightings
+  const traitCounts = {};
+
   for (let i = 0; i < settings.build.quantity; i++) {
-    const newRow = await createNewRow(i);
-    list.push(newRow);
+    const { nextRow, isNew } = await loadOrCreate(i);
+    list.push(nextRow);
 
-    // Get trait counts
-    const traitCounts = {};
-    for (let i = 0; i < list.length; i++) {
-      const image = list[i];
-      CATEGORY_KEYS.forEach((layerKey) => {
-        const masterKey = `${layerKey}.${image[layerKey]}`;
-        if (!traitCounts[masterKey]) traitCounts[masterKey] = 0;
-        traitCounts[masterKey] += 1;
-      });
-    }
+    CATEGORY_KEYS.forEach((layerKey) => {
+      const masterKey = `${layerKey}.${nextRow[layerKey]}`;
+      if (!traitCounts[masterKey]) traitCounts[masterKey] = 0;
+      traitCounts[masterKey] += 1;
+    });
 
-    let csv = "Category,Value,Count\n";
-    for (let [values, count] of Object.entries(traitCounts)) {
-      const [category, value] = values.split(".");
-      csv += `${category},${value},${count}\n`;
-    }
-
-    await fsExtra.outputFile(traitCountPath, csv);
-
-    const finalMeta = [];
-    for (let i = 0; i < list.length; i++) {
+    if (isNew) {
+      console.log("Creating new", i);
       const meta = generateMeta(i);
-      finalMeta.push(meta);
       await fsExtra.outputFile(`${outputPath}/${i}.json`, toStr(meta));
+    } else {
+      console.log("Loading existing", i);
     }
   }
+
+  let csv = "Category,Value,Count\n";
+  for (let [values, count] of Object.entries(traitCounts)) {
+    const [category, value] = values.split(".");
+    csv += `${category},${value},${count}\n`;
+  }
+  await fsExtra.outputFile(traitCountPath, csv);
 }
 
 function generateMeta(index) {
@@ -136,7 +158,9 @@ function generateMeta(index) {
 
 async function main() {
   // Delete any old files
-  await fsExtra.emptyDir(outputPath);
+  if (!settings.build.shouldResume) {
+    await fsExtra.emptyDir(outputPath);
+  }
 
   // Create Meta
   await createMeta();

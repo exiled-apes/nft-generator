@@ -1,5 +1,6 @@
 {
   "scripts": {
+    "count": "node ./scripts/count.js",
     "createLayers": "node ./scripts/createLayers.js",
     "createMeta": "node ./scripts/createMeta.js",
     "createImages": "node ./scripts/createImages.js",
@@ -14,5 +15,6 @@
     "lodash": "^4.17.21",
     "sharp": "^0.29.1",
     "weighted": "^0.3.0"
-  }
+  },
+  "license": "MIT"
 }

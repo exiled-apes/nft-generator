@@ -1,8 +1,10 @@
 const build = {
-  sourceName: "wombat2", // Name of inputs subfolder that contains your raw assets
-  quantity: 20, // How many NFTs would you like to generate? Try a small number for test runs.
+  sourceName: "wombat", // Name of inputs subfolder that contains your raw assets
+  quantity: 350000, // How many NFTs would you like to generate? Try a small number for test runs.
+  shouldResume: true, // If your generation is interupted and you want to resume, set this to true
 };
 
+// if "false" then "properties" will be deleted from the metadata as this is a Solana specific field
 const IS_SOLANA = true;
 
 // This is the information that will show up in your NFT metadata
